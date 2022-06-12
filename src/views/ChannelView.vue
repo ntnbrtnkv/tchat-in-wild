@@ -14,6 +14,9 @@ export default defineComponent({
       fetchEmotes(id);
     }
   },
+  created: function () {
+    document.title = `${this.$route.params.id} - TChat in wild`;
+  },
   components: {
     EmotesBox,
     ChatBox,
