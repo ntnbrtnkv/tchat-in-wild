@@ -3,7 +3,6 @@ import { defineComponent, ref } from "vue";
 // import twemoji from "twemoji";
 import html2canvas from "html2canvas";
 import { useEmotesStore } from "@/stores/emotes";
-import { copyEmote } from "@/utils/copyEmote";
 import type { SimpleEmote } from "@/types/Emote";
 
 export default defineComponent({
@@ -30,7 +29,7 @@ export default defineComponent({
       ) {
         const emote = getEmote(this.parsedText[0].name);
         if (emote) {
-          copyEmote(emote);
+          // copyEmote(emote);
         }
       } else {
         if (this.wrapper) {

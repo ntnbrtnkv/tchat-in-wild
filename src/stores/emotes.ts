@@ -38,6 +38,10 @@ export const useEmotesStore = defineStore<
   },
   actions: {
     async fetchEmotes(channel: string) {
+      if (this.globalEmotes.length > 0) {
+        return;
+      }
+
       const [globalEmotes, channelEmotes] = await Promise.all([
         EmotesAPI.getGlobalEmotes(),
         EmotesAPI.getChannelEmotes(channel),

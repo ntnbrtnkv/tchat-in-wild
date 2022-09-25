@@ -2,24 +2,28 @@
 import { useEmotesStore } from "@/stores/emotes";
 import type { SimpleEmote } from "@/types/Emote";
 import EmoteButton from "@/components/EmoteButton.vue";
+import { defineComponent } from "vue";
 
-function filteredEmotes(substring: string, emotes: SimpleEmote[]) {
-  const loweredSubstr = substring.toLowerCase();
-  return emotes.filter((emote) =>
-    emote.name.toLowerCase().includes(loweredSubstr)
-  );
-}
-
-export default {
+export default defineComponent({
   name: "EmotesBox",
   data() {
     return {
       search: "",
+      showAll: false,
     };
   },
   components: { EmoteButton },
   methods: {
-    filteredEmotes,
+    filteredEmotes(substring: string, emotes: SimpleEmote[]) {
+      const loweredSubstr = substring.toLowerCase();
+      if (loweredSubstr.length < 2 && !this.showAll) return [];
+      return emotes.filter((emote) =>
+        emote.name.toLowerCase().includes(loweredSubstr)
+      );
+    },
+    setShowAll() {
+      this.showAll = true;
+    },
   },
   computed: {
     globalEmotes(): SimpleEmote[] {
@@ -37,33 +41,62 @@ export default {
       }));
     },
   },
-};
+});
 </script>
 
 <template>
-  <div>
-    <input v-model="search" />
-    <h2>Global emotes</h2>
-    <ul>
-      <EmoteButton
-        v-for="emote in filteredEmotes(search, globalEmotes)"
-        :key="emote.name"
-        :emote="emote"
-      />
-    </ul>
-
-    <h2>Channel emotes</h2>
-    <ul>
-      <EmoteButton
-        v-for="emote in filteredEmotes(search, channelEmotes)"
-        :key="emote.name"
-        :emote="emote"
-      />
-    </ul>
+  <div class="container">
+    <section>
+      <h3>Type emote name</h3>
+      <input v-model="search" autofocus />
+      <button
+        class="showAll"
+        v-if="!showAll && search.length === 0"
+        @click="setShowAll"
+      >
+        Show all
+      </button>
+    </section>
+    <section>
+      <h2>Global emotes</h2>
+      <ul>
+        <EmoteButton
+          v-for="emote in filteredEmotes(search, globalEmotes)"
+          :key="emote.name"
+          :emote="emote"
+        />
+      </ul>
+    </section>
+    <section>
+      <h2>Channel emotes</h2>
+      <ul>
+        <EmoteButton
+          v-for="emote in filteredEmotes(search, channelEmotes)"
+          :key="emote.name"
+          :emote="emote"
+        />
+      </ul>
+    </section>
   </div>
 </template>
 
 <style scoped>
+.showAll {
+  position: fixed;
+  margin-left: 8px;
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+section {
+  margin-bottom: 24px;
+}
+h2 {
+  text-align: center;
+  margin-bottom: 12px;
+}
 ul {
   list-style-type: none;
   display: flex;

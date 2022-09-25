@@ -2,13 +2,13 @@
 import type { SimpleEmote } from "@/types/Emote";
 import type { PropType } from "vue";
 import { useEmotesStore } from "@/stores/emotes";
-import { copyEmote } from "@/utils/copyEmote";
 
 export default {
   name: "EmoteButton",
   props: {
     emote: Object as PropType<SimpleEmote>,
   },
+
   methods: {
     onEmoteClick(emote: SimpleEmote) {
       const { getEmote } = useEmotesStore();
@@ -16,7 +16,7 @@ export default {
       const foundEmote = getEmote(emote.name);
 
       if (foundEmote) {
-        copyEmote(foundEmote);
+        // copyEmote(foundEmote);
       }
     },
   },
@@ -25,12 +25,19 @@ export default {
 
 <template>
   <li @click="onEmoteClick(emote)">
-    <img
-      :src="emote.url"
-      :alt="emote.name"
-      :title="emote.name"
-      loading="lazy"
-    />
+    <router-link
+      :to="{
+        name: 'emote',
+        params: { channel: this.$route.params.channel, emote: emote.name },
+      }"
+    >
+      <img
+        :src="emote.url"
+        :alt="emote.name"
+        :title="emote.name"
+        loading="lazy"
+      />
+    </router-link>
   </li>
 </template>
 

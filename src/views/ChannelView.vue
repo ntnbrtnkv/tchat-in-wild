@@ -1,31 +1,47 @@
 <script lang="ts">
 import { defineComponent } from "vue";
-import ChatBox from "@/components/ChatBox.vue";
 import { useEmotesStore } from "@/stores/emotes";
-import EmotesBox from "@/components/EmotesBox.vue";
 
 export default defineComponent({
+  data() {
+    return {
+      loading: true,
+    };
+  },
   mounted() {
     const { fetchEmotes } = useEmotesStore();
 
-    const { id } = this.$route.params;
+    const { channel } = this.$route.params;
 
-    if (typeof id === "string") {
-      fetchEmotes(id);
+    if (typeof channel === "string") {
+      fetchEmotes(channel).then(() => (this.loading = false));
     }
   },
   created: function () {
-    document.title = `${this.$route.params.id} - TChat in wild`;
-  },
-  components: {
-    EmotesBox,
-    ChatBox,
+    document.title = `${this.$route.params.channel} - TChat in wild`;
   },
 });
 </script>
 
 <template>
-  {{ $route.params.id }}
-  <ChatBox />
-  <EmotesBox />
+  <router-link
+    active-class="active-link"
+    :to="{
+      name: 'emotes',
+      params: {
+        channel: $route.params.channel,
+      },
+    }"
+    ><h1>{{ $route.params.channel }}</h1></router-link
+  >
+  <!--  <ChatBox />-->
+  <h1 v-if="loading">Loading</h1>
+  <RouterView v-else />
 </template>
+
+<style scoped>
+h1 {
+  margin-bottom: 24px;
+  text-align: center;
+}
+</style>

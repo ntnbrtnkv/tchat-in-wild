@@ -64,7 +64,6 @@
 }
 
 body {
-  min-height: 100vh;
   color: var(--color-text);
   background: var(--color-background);
   transition: color 0.5s, background-color 0.5s;
@@ -73,6 +72,17 @@ body {
   font-size: 15px;
   font-stretch: 100%;
   text-rendering: optimizeLegibility;
+  margin: 48px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--color-heading);
+}
+
+@media (max-width: 500px) {
+  body {
+    margin: 24px;
+  }
 }
