@@ -30,6 +30,7 @@ export default defineComponent({
       const { globalEmotes } = useEmotesStore();
       return globalEmotes.map((emote) => ({
         name: emote.code,
+        channel: this.$route.params.channel as string,
         url: emote.urls[0].url,
       }));
     },
@@ -37,6 +38,7 @@ export default defineComponent({
       const { channelEmotes } = useEmotesStore();
       return channelEmotes.map((emote) => ({
         name: emote.code,
+        channel: this.$route.params.channel as string,
         url: emote.urls[0].url,
       }));
     },
@@ -84,6 +86,11 @@ export default defineComponent({
 .showAll {
   position: fixed;
   margin-left: 8px;
+  background-color: transparent;
+  border: 0;
+  color: var(--color-text);
+  cursor: pointer;
+  text-decoration: underline;
 }
 .container {
   display: flex;

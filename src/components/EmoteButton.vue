@@ -28,7 +28,7 @@ export default {
     <router-link
       :to="{
         name: 'emote',
-        params: { channel: $route.params.channel, emote: emote.name },
+        params: { channel: emote.channel, emote: emote.name },
       }"
     >
       <img

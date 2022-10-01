@@ -2,7 +2,11 @@ import { defineStore } from "pinia";
 import { EmotesAPI } from "@/api/emotes";
 import type { IEmote } from "@/types/Emote";
 
-type IState = { globalEmotes: IEmote[]; channelEmotes: IEmote[] };
+type IState = {
+  globalEmotes: IEmote[];
+  channelEmotes: IEmote[];
+  channel: string;
+};
 
 export const useEmotesStore = defineStore<
   "emotes",
@@ -13,6 +17,8 @@ export const useEmotesStore = defineStore<
     getEmote: (state: IState) => (name: string) => IEmote | undefined;
   },
   {
+    fetchGlobalEmotes: () => Promise<void>;
+    fetchChannelEmotes: (channel: string) => Promise<void>;
     fetchEmotes: (channel: string) => Promise<void>;
   }
 >({
@@ -20,6 +26,7 @@ export const useEmotesStore = defineStore<
   state: () => ({
     globalEmotes: [],
     channelEmotes: [],
+    channel: "",
   }),
   getters: {
     map() {
@@ -37,18 +44,24 @@ export const useEmotesStore = defineStore<
     },
   },
   actions: {
-    async fetchEmotes(channel: string) {
-      if (this.globalEmotes.length > 0) {
-        return;
+    async fetchGlobalEmotes() {
+      if (this.globalEmotes.length === 0) {
+        const globalEmotes = await EmotesAPI.getGlobalEmotes();
+        this.globalEmotes = [...new Set(globalEmotes)];
       }
-
-      const [globalEmotes, channelEmotes] = await Promise.all([
-        EmotesAPI.getGlobalEmotes(),
-        EmotesAPI.getChannelEmotes(channel),
+    },
+    async fetchChannelEmotes(channel: string) {
+      if (this.channel !== channel) {
+        this.channel = channel;
+        const channelEmotes = await EmotesAPI.getChannelEmotes(channel);
+        this.channelEmotes = [...new Set(channelEmotes)];
+      }
+    },
+    async fetchEmotes(channel: string) {
+      await Promise.all([
+        this.fetchGlobalEmotes(),
+        this.fetchChannelEmotes(channel),
       ]);
-
-      this.globalEmotes = [...new Set(globalEmotes)];
-      this.channelEmotes = [...new Set(channelEmotes)];
     },
   },
 });

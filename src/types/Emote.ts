@@ -10,4 +10,5 @@ export type IEmote = {
 export type SimpleEmote = {
   url: string;
   name: string;
+  channel: string;
 };

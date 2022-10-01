@@ -3,6 +3,7 @@ import { useEmotesStore } from "@/stores/emotes";
 import { defineComponent } from "vue";
 import { TChatAPI } from "@/api/tchat";
 import type { IEmote } from "@/types/Emote";
+import { useFavorite } from "@/stores/favorite";
 
 export default defineComponent({
   name: "EmoteView",
@@ -15,6 +16,11 @@ export default defineComponent({
       emote: undefined,
       type: "loading...",
       animated: false,
+    };
+  },
+  setup() {
+    return {
+      favs: useFavorite(),
     };
   },
   methods: {
@@ -64,10 +70,17 @@ export default defineComponent({
   mounted() {
     const { getEmote } = useEmotesStore();
 
-    const { emote } = this.$route.params;
+    const { emote, channel } = this.$route.params;
 
-    if (typeof emote === "string") {
+    if (typeof emote === "string" && typeof channel === "string") {
       this.emote = getEmote(emote);
+      if (this.emote) {
+        this.favs.visitEmote({
+          name: emote,
+          channel,
+          url: this.emote.urls[0].url,
+        });
+      }
     }
   },
 });
