@@ -22,6 +22,44 @@ export default defineComponent({
       const response = await fetch(link);
       return response.blob();
     },
+    imageLoaded(index: number) {
+      if (index !== 0) return;
+
+      (async () => {
+        if (this.emote) {
+          let blob;
+          const url = this.emote.urls[0].url;
+          try {
+            blob = await this.getImageBlob(url);
+          } catch (error) {
+            if (
+              (error as Error)?.message ===
+              "NetworkError when attempting to fetch resource."
+            ) {
+              blob = await this.getImageBlob(TChatAPI.proxy(url));
+            }
+          }
+          if (!blob) {
+            throw Error("Won`t be able to get image blob");
+          }
+
+          const text = await blob.text();
+          const type = blob.type;
+          if (type === "image/webp") {
+            this.animated = text.includes("ANIM");
+
+            if (this.animated) {
+              this.emote.urls.forEach((url) => {
+                url.url = TChatAPI.convertToGif(url.url);
+              });
+            }
+            this.type = type + "; " + (this.animated ? "Animated" : "Static");
+          } else {
+            this.type = type;
+          }
+        }
+      })();
+    },
   },
   mounted() {
     const { getEmote } = useEmotesStore();
@@ -30,28 +68,6 @@ export default defineComponent({
 
     if (typeof emote === "string") {
       this.emote = getEmote(emote);
-
-      (async () => {
-        if (this.emote) {
-          const blob = await this.getImageBlob(this.emote.urls[0].url);
-          const text = await blob.text();
-          const type = blob.type;
-          if (type === "image/webp") {
-            this.animated = text.includes("ANIM");
-
-            if (this.animated) {
-              await Promise.all(
-                this.emote.urls.map(async (url) => {
-                  url.url = await TChatAPI.convertToGif(url.url);
-                })
-              );
-            }
-            this.type = type + "; " + (this.animated ? "Animated" : "Static");
-          } else {
-            this.type = type;
-          }
-        }
-      })();
     }
   },
 });
@@ -60,9 +76,9 @@ export default defineComponent({
 <template>
   <h4>Filetype: {{ type }}</h4>
   <ul v-if="emote">
-    <li v-for="url in emote.urls" :key="url.size">
+    <li v-for="(url, index) in emote.urls" :key="url.size">
       <span class="label">{{ url.size }}</span>
-      <img :src="url.url" alt="url.size" />
+      <img :src="url.url" alt="url.size" @load="imageLoaded(index)" />
     </li>
   </ul>
 </template>

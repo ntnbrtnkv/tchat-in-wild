@@ -1,26 +1,11 @@
-import type { AxiosInstance } from "axios";
-import axios from "axios";
-
-type IResponse = {
-  gif: string;
-};
-
 class TChat {
-  private axios: AxiosInstance;
-
-  constructor() {
-    this.axios = axios.create({
-      baseURL: "https://tchat-backend-toha1100.koyeb.app",
-    });
+  proxy(url: string) {
+    const refinedUrl = new URL(url);
+    return `//images.weserv.nl/?url=${refinedUrl.host}${refinedUrl.pathname}`;
   }
 
   convertToGif(url: string) {
-    const data = new FormData();
-    data.set("url", url);
-
-    return this.axios
-      .post<IResponse>(`/convert`, data)
-      .then(({ data }) => data.gif);
+    return `${this.proxy(url)}&output=gif&n=-1`;
   }
 }
 
