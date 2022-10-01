@@ -42,7 +42,7 @@ export default defineComponent({
               (error as Error)?.message ===
               "NetworkError when attempting to fetch resource."
             ) {
-              blob = await this.getImageBlob(TChatAPI.proxy(url));
+              blob = await this.getImageBlob(await TChatAPI.proxy(url));
             }
           }
           if (!blob) {
@@ -55,9 +55,12 @@ export default defineComponent({
             this.animated = text.includes("ANIM");
 
             if (this.animated) {
-              this.emote.urls.forEach((url) => {
-                url.url = TChatAPI.convertToGif(url.url);
-              });
+              await Promise.all(
+                this.emote.urls.map(async (url) => {
+                  const newUrl = await TChatAPI.convertToGif(url.url);
+                  url.url = newUrl;
+                })
+              );
             }
             this.type = type + "; " + (this.animated ? "Animated" : "Static");
           } else {
