@@ -35,22 +35,30 @@ export default defineComponent({
         if (this.emote) {
           let blob;
           const url = this.emote.urls[0].url;
-          try {
-            blob = await this.getImageBlob(url);
-          } catch (error) {
-            if (
-              (error as Error)?.message ===
-              "NetworkError when attempting to fetch resource."
-            ) {
-              blob = await this.getImageBlob(await TChatAPI.proxy(url));
+          let type;
+          let text = "ANIM";
+
+          if (url.includes(".webp")) {
+            type = "image/webp";
+          } else {
+            try {
+              blob = await this.getImageBlob(url);
+            } catch (error) {
+              if (
+                (error as Error)?.message ===
+                "NetworkError when attempting to fetch resource."
+              ) {
+                blob = await this.getImageBlob(await TChatAPI.proxy(url));
+              }
             }
-          }
-          if (!blob) {
-            throw Error("Won`t be able to get image blob");
+            if (!blob) {
+              throw Error("Won`t be able to get image blob");
+            }
+
+            await blob.text();
+            type = blob.type;
           }
 
-          const text = await blob.text();
-          const type = blob.type;
           if (type === "image/webp") {
             this.animated = text.includes("ANIM");
 
