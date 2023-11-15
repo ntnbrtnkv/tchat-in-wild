@@ -11,11 +11,13 @@ export default defineComponent({
     emote: IEmote | undefined;
     type: string;
     animated: boolean;
+    urls: string[];
   } {
     return {
       emote: undefined,
       type: "loading...",
       animated: false,
+      urls: [],
     };
   },
   setup() {
@@ -28,29 +30,19 @@ export default defineComponent({
       const response = await fetch(link);
       return response.blob();
     },
-    imageLoaded(index: number) {
+    imageLoaded(index: number, url: string) {
       if (index !== 0) return;
 
       (async () => {
         if (this.emote) {
           let blob;
-          const url = this.emote.urls[0].url;
           let type;
           let text = "ANIM";
 
           if (url.includes(".webp")) {
             type = "image/webp";
           } else {
-            try {
-              blob = await this.getImageBlob(url);
-            } catch (error) {
-              if (
-                (error as Error)?.message ===
-                "NetworkError when attempting to fetch resource."
-              ) {
-                blob = await this.getImageBlob(await TChatAPI.proxy(url));
-              }
-            }
+            blob = await this.getImageBlob(url);
             if (!blob) {
               throw Error("Won`t be able to get image blob");
             }
@@ -65,8 +57,7 @@ export default defineComponent({
             if (this.animated) {
               await Promise.all(
                 this.emote.urls.map(async (url) => {
-                  const newUrl = await TChatAPI.convertToGif(url.url);
-                  url.url = newUrl;
+                  url.url = TChatAPI.convertToGif(url.url);
                 })
               );
             }
@@ -91,6 +82,7 @@ export default defineComponent({
           channel,
           url: this.emote.urls[0].url,
         });
+        this.urls = this.emote.urls.map(({ url }) => TChatAPI.proxy(url));
       }
     }
   },
@@ -99,35 +91,38 @@ export default defineComponent({
 
 <template>
   <h4>Filetype: {{ type }}</h4>
-  <ul v-if="emote">
-    <li v-for="(url, index) in emote.urls" :key="url.size">
-      <span class="label">{{ url.size }}</span>
-      <img :src="url.url" alt="url.size" @load="imageLoaded(index)" />
-    </li>
-  </ul>
+  <section v-if="emote">
+    <span>Size</span>
+    <span>Original</span>
+    <span>Converted</span>
+    <template v-for="(url, index) in emote.urls" :key="url.size">
+      <td class="label">{{ url.size }}</td>
+      <img :src="url.url" title="Original image" alt="Original image" />
+      <img
+        :src="urls[index]"
+        alt="Converted image"
+        title="Converted image"
+        @load="imageLoaded(index, urls[index])"
+      />
+    </template>
+  </section>
 </template>
 
 <style scoped>
-img {
-  width: 100%;
-  height: auto;
-}
 h4 {
   text-align: center;
   margin-bottom: 2em;
 }
-ul {
-  list-style-type: none;
-  display: flex;
-  flex-direction: column;
+section {
+  display: grid;
+  grid-template-columns: repeat(3, min-content);
+  grid-auto-rows: auto;
+  justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
+  grid-gap: 8px;
 }
-li {
-  margin-bottom: 2em;
-}
-.label {
-  position: fixed;
-  margin-left: -2em;
+
+section > *:nth-child(3n-1) {
+  justify-self: end;
 }
 </style>

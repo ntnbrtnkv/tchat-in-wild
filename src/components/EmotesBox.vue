@@ -49,8 +49,11 @@ export default defineComponent({
 <template>
   <div class="container">
     <section>
-      <h3>Type emote name</h3>
-      <input v-model="search" autofocus />
+      <h3>Emote name</h3>
+      <label>
+        Type al least 2 symbols to show filtered emotes
+        <input v-model="search" autofocus />
+      </label>
       <button
         class="showAll"
         v-if="!showAll && search.length === 0"
@@ -84,8 +87,7 @@ export default defineComponent({
 
 <style scoped>
 .showAll {
-  position: fixed;
-  margin-left: 8px;
+  float: inline-end;
   background-color: transparent;
   border: 0;
   color: var(--color-text);
@@ -111,5 +113,9 @@ ul {
 }
 li {
   margin-right: 1em;
+}
+label {
+  display: flex;
+  flex-direction: column;
 }
 </style>

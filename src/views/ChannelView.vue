@@ -94,6 +94,6 @@ h1 {
   background-color: transparent;
   border: 0;
   cursor: pointer;
-  position: fixed;
+  position: absolute;
 }
 </style>

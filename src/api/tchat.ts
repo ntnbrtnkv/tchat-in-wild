@@ -1,15 +1,15 @@
 class TChat {
-  async proxy(url: string) {
+  proxy(url: string) {
     const refinedUrl = new URL(url);
-    const nextUrl = `//images.weserv.nl/?url=${refinedUrl.host}${refinedUrl.pathname}`;
-    await fetch(nextUrl);
+    const nextUrl = `//images.weserv.nl/?url=${refinedUrl.host}${refinedUrl.pathname}&n=-1`;
+    fetch(nextUrl);
     return nextUrl;
   }
 
-  async convertToGif(url: string) {
+  convertToGif(url: string) {
     const refinedUrl = new URL(url);
     const nextUrl = `//images.weserv.nl/?url=${refinedUrl.host}${refinedUrl.pathname}&output=gif&n=-1`;
-    await fetch(nextUrl);
+    fetch(nextUrl);
     return nextUrl;
   }
 }
