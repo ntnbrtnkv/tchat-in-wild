@@ -12,6 +12,7 @@ export default defineComponent({
     return {
       loading: true,
       channel: "",
+      error: null as string | null,
     };
   },
   setup() {
@@ -38,13 +39,23 @@ export default defineComponent({
     },
     init() {
       this.loading = true;
+      this.error = null;
       const { fetchEmotes } = useEmotesStore();
 
       const { channel } = this.$route.params;
 
       if (typeof channel === "string") {
         this.channel = channel;
-        fetchEmotes(channel).then(() => (this.loading = false));
+        fetchEmotes(channel)
+          .then(() => (this.loading = false))
+          .catch((err: unknown) => {
+            this.loading = false;
+            if (err instanceof Error) {
+              this.error = err.message;
+            } else {
+              this.error = "Failed to load emotes. Please try again.";
+            }
+          });
       }
     },
   },
@@ -89,6 +100,10 @@ export default defineComponent({
   </div>
   <div v-if="loading" class="status">
     <p class="loading-text">Loading emotes for <strong>{{ channel }}</strong>...</p>
+  </div>
+  <div v-else-if="error" class="status">
+    <p class="error-text">{{ error }}</p>
+    <button class="retry-btn" @click="init">Try again</button>
   </div>
   <RouterView v-else />
 </template>
@@ -142,5 +157,22 @@ export default defineComponent({
 .loading-text {
   opacity: 0.6;
   font-size: 1.1rem;
+}
+.error-text {
+  color: #e05252;
+  font-size: 1.05rem;
+  margin-bottom: 12px;
+}
+.retry-btn {
+  background-color: transparent;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 6px;
+  padding: 6px 16px;
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: 0.9rem;
+}
+.retry-btn:hover {
+  background: var(--color-background-soft);
 }
 </style>

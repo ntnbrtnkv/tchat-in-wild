@@ -14,8 +14,9 @@ class Emotes {
   }
 
   getChannelEmotes(channel: string) {
+    const safeChannel = encodeURIComponent(channel);
     return this.axios
-      .get<IResponse>(`/channel/${channel}/emotes/${this.services}`)
+      .get<IResponse>(`/channel/${safeChannel}/emotes/${this.services}`)
       .then(({ data }) => data);
   }
 

@@ -11,8 +11,10 @@ type ApiEmote = {
 };
 
 function getPreferredUrl(emote: ApiEmote): string {
-  const preferred = emote.urls.find((u) => u.size === "2x")
+  const preferred =
+    emote.urls.find((u) => u.size === "4x")
     ?? emote.urls.find((u) => u.size === "3x")
+    ?? emote.urls.find((u) => u.size === "2x")
     ?? emote.urls[0];
   return preferred?.url ?? "";
 }
@@ -54,33 +56,41 @@ function toOgImageUrl(emote: ApiEmote): string {
 
   try {
     const parsed = new URL(url);
-    return `https://images.weserv.nl/?url=${parsed.host}${parsed.pathname}&n=-1`;
+    return `https://images.weserv.nl/?url=${parsed.host}${parsed.pathname}&w=1200&h=630&fit=contain&bg=1a1a2e&output=png&n=-1`;
   } catch {
     return url;
   }
 }
 
-async function toOgVideoUrl(emote: ApiEmote): Promise<string> {
+async function toOgAnimatedUrl(emote: ApiEmote): Promise<string> {
   const url = getPreferredUrl(emote);
   if (!url) return "";
 
-  // 7TV — detect by CDN domain, convert .webp → .gif for Cloudinary
+  // 7TV — check if .gif version exists (only animated emotes have it)
   if (is7tv(url)) {
     const gifUrl = url.replace(/\.webp$/, ".gif");
-    return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/f_mp4,fl_animated,fl_lossy/${gifUrl}`;
+    try {
+      const res = await fetch(gifUrl, { method: "HEAD" });
+      if (res.ok) {
+        // Return the raw gif URL for og:video (weserv mp4 conversion)
+        return gifUrl;
+      }
+    } catch {
+      // not animated
+    }
+    return "";
   }
 
-  // BTTV — detect by CDN domain
+  // BTTV — .gif URL means animated
   if (isBttv(url)) {
-    return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/f_mp4,fl_animated,fl_lossy/${url}`;
+    return url.endsWith(".gif") ? url : "";
   }
 
   // Twitch — check if animated version exists
   if (isTwitch(url)) {
     const hasAnimated = await checkTwitchAnimated(url);
     if (hasAnimated) {
-      const animUrl = getTwitchAnimatedUrl(url);
-      return `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/f_mp4,fl_animated,fl_lossy/${animUrl}`;
+      return getTwitchAnimatedUrl(url);
     }
   }
 
@@ -98,8 +108,8 @@ function buildOgHtml(
     ? `
   <meta property="og:video" content="${videoUrl}" />
   <meta property="og:video:type" content="video/mp4" />
-  <meta property="og:video:width" content="112" />
-  <meta property="og:video:height" content="112" />`
+  <meta property="og:video:width" content="1200" />
+  <meta property="og:video:height" content="630" />`
     : "";
 
   return `<!DOCTYPE html>
@@ -110,8 +120,8 @@ function buildOgHtml(
   <meta property="og:description" content="Emote on ${channel}'s channel" />
   <meta property="og:site_name" content="TChat in wild" />
   <meta property="og:image" content="${imageUrl}" />
-  <meta property="og:image:width" content="112" />
-  <meta property="og:image:height" content="112" />${videoTags}
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />${videoTags}
   <meta property="og:type" content="website" />
   <meta property="og:url" content="${siteUrl}" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -139,12 +149,12 @@ export default async (request: Request) => {
     return;
   }
 
-  const [channel, emoteName] = segments;
+  const [channel, emoteName] = segments.map(decodeURIComponent);
 
   try {
     // Fetch channel + global emotes in parallel
     const [channelRes, globalRes] = await Promise.all([
-      fetch(`${EMOTES_API}/channel/${channel}/emotes/all`),
+      fetch(`${EMOTES_API}/channel/${encodeURIComponent(channel)}/emotes/all`),
       fetch(`${EMOTES_API}/global/emotes/all`),
     ]);
 
@@ -163,8 +173,11 @@ export default async (request: Request) => {
     }
 
     const ogImageUrl = toOgImageUrl(emote);
-    const ogVideoUrl = await toOgVideoUrl(emote);
-    const siteUrl = `${url.origin}/${channel}/${emoteName}`;
+    const animatedSourceUrl = await toOgAnimatedUrl(emote);
+    const ogVideoUrl = animatedSourceUrl
+      ? `https://res.cloudinary.com/${CLOUDINARY_CLOUD}/image/fetch/f_mp4,fl_animated,fl_lossy/${animatedSourceUrl}`
+      : "";
+    const siteUrl = `${url.origin}/${encodeURIComponent(channel)}/${encodeURIComponent(emoteName)}`;
 
     const html = buildOgHtml(channel, emoteName, ogImageUrl, ogVideoUrl, siteUrl);
 
@@ -177,5 +190,6 @@ export default async (request: Request) => {
 };
 
 export const config = {
-  path: "/:channel/:emote",
+  path: "/*",
+  excludedPath: "/assets/*",
 };
