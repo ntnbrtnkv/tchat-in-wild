@@ -66,19 +66,30 @@ export default defineComponent({
 <template>
   <div class="container">
     <section class="search-bar">
-      <h3>Emote name</h3>
-      <label>
-        Type at least 2 symbols to show filtered emotes
-        <input v-model="search" autofocus />
-      </label>
-      <button
-        class="showAll"
-        v-if="!showAll && search.length === 0"
-        @click="setShowAll"
-      >
-        Show all
-      </button>
+      <label for="emote-search" class="search-label">Search emotes by name</label>
+      <div class="search-row">
+        <input
+          id="emote-search"
+          v-model="search"
+          autofocus
+          placeholder="Type to filter emotes..."
+        />
+        <button
+          class="showAll"
+          v-if="!showAll && search.length === 0"
+          @click="setShowAll"
+        >
+          Show all
+        </button>
+      </div>
+      <p class="search-hint" v-if="search.length < 2 && !showAll">
+        Type at least 2 characters or click "Show all" to see all emotes
+      </p>
     </section>
+
+    <p class="empty-state" v-if="providerSections.length === 0">
+      No emotes found for this channel.
+    </p>
 
     <div class="providers">
       <article
@@ -122,12 +133,13 @@ export default defineComponent({
 
 <style scoped>
 .showAll {
-  float: inline-end;
   background-color: transparent;
   border: 0;
   color: var(--color-text);
   cursor: pointer;
   text-decoration: underline;
+  font-size: 0.9rem;
+  padding: 0;
 }
 .container {
   display: flex;
@@ -138,6 +150,37 @@ export default defineComponent({
   margin-bottom: 28px;
   width: 100%;
   max-width: 500px;
+}
+.search-label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+  opacity: 0.7;
+}
+.search-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.search-row input {
+  flex: 1;
+  padding: 10px 14px;
+  font-size: 1rem;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 6px;
+  background: var(--color-background-soft);
+  color: var(--color-text);
+}
+.search-hint {
+  font-size: 0.8rem;
+  opacity: 0.5;
+  margin-top: 6px;
+}
+.empty-state {
+  text-align: center;
+  opacity: 0.5;
+  margin-top: 32px;
+  font-size: 1rem;
 }
 .providers {
   display: flex;

@@ -47,5 +47,14 @@ export const useFavorite = defineStore("favorite", {
         );
       }
     },
+    removeEmote(emote: SimpleEmote) {
+      const found = this.emotes.findIndex(({ url }) => url === emote.url);
+      if (found !== -1) {
+        this.emotes.splice(found, 1);
+      }
+    },
+    hasEmote(emote: SimpleEmote) {
+      return this.emotes.some(({ url }) => url === emote.url);
+    },
   },
 });

@@ -64,36 +64,83 @@ export default defineComponent({
 
 <template>
   <FavoriteChannels />
-  <h1>
+  <nav class="breadcrumb">
+    <router-link :to="{ name: 'home' }">Home</router-link>
+    <span> / </span>
     <router-link
       active-class="active-link"
       :to="{
         name: 'emotes',
-        params: {
-          channel: $route.params.channel,
-        },
+        params: { channel: $route.params.channel },
       }"
     >
       {{ $route.params.channel }}
     </router-link>
-    <button @click="toggleFav" class="fav">
+    <template v-if="$route.params.emote">
+      <span> / </span>
+      <span class="current">{{ $route.params.emote }}</span>
+    </template>
+  </nav>
+  <div class="fav-row" v-if="!$route.params.emote">
+    <button @click="toggleFav" class="fav-btn">
       <img alt="favorite" :src="iconPath" />
+      {{ isFav ? 'Remove channel from favorites' : 'Add channel to favorites' }}
     </button>
-  </h1>
-  <!--  <ChatBox />-->
-  <h1 v-if="loading">Loading</h1>
+  </div>
+  <div v-if="loading" class="status">
+    <p class="loading-text">Loading emotes for <strong>{{ channel }}</strong>...</p>
+  </div>
   <RouterView v-else />
 </template>
 
 <style scoped>
-h1 {
-  margin-bottom: 24px;
+.breadcrumb {
   text-align: center;
+  margin-bottom: 24px;
+  font-size: 1.1rem;
 }
-.fav {
+.breadcrumb a {
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+.breadcrumb span {
+  opacity: 0.4;
+  margin: 0 4px;
+}
+.breadcrumb .current {
+  opacity: 1;
+}
+.fav-row {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.fav-btn {
   background-color: transparent;
-  border: 0;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 6px;
+  padding: 6px 14px;
   cursor: pointer;
-  position: absolute;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.fav-btn:hover {
+  background: var(--color-background-soft);
+}
+.fav-btn img {
+  width: 16px;
+  height: 16px;
+}
+.status {
+  text-align: center;
+  margin-top: 48px;
+}
+.loading-text {
+  opacity: 0.6;
+  font-size: 1.1rem;
 }
 </style>
