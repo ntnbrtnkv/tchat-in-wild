@@ -68,8 +68,14 @@ export const useEmotesStore = defineStore<
     async fetchChannelEmotes(channel: string) {
       if (this.channel !== channel) {
         this.channel = channel;
-        const channelEmotes = await EmotesAPI.getChannelEmotes(channel);
-        this.channelEmotes = [...new Set(channelEmotes)];
+        try {
+          const channelEmotes = await EmotesAPI.getChannelEmotes(channel);
+          this.channelEmotes = [...new Set(channelEmotes)];
+        } catch (err) {
+          this.channel = "";
+          this.channelEmotes = [];
+          throw err;
+        }
       }
     },
     async fetchEmotes(channel: string) {

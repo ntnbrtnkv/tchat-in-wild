@@ -4,6 +4,10 @@ import ChannelView from "@/views/ChannelView.vue";
 import EmoteView from "@/views/EmoteView.vue";
 import EmotesBox from "@/components/EmotesBox.vue";
 
+function normalizeChannel(channel: string) {
+  return channel.trim().toLocaleLowerCase();
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -16,6 +20,21 @@ const router = createRouter({
       path: "/:channel",
       name: "channel",
       component: ChannelView,
+      beforeEnter: (to) => {
+        const { channel } = to.params;
+        if (typeof channel !== "string") return true;
+
+        const normalizedChannel = normalizeChannel(channel);
+        if (normalizedChannel === channel) return true;
+
+        return {
+          name: to.name as string,
+          params: { ...to.params, channel: normalizedChannel },
+          query: to.query,
+          hash: to.hash,
+          replace: true,
+        };
+      },
       children: [
         {
           path: "",
