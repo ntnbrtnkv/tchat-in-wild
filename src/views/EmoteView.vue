@@ -26,6 +26,15 @@ export default defineComponent({
     };
   },
   methods: {
+    setMetaTag(property: string, content: string) {
+      let el = document.querySelector(`meta[property="${property}"]`) as HTMLMetaElement | null;
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute("property", property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    },
     async getImageBlob(link: string) {
       const response = await fetch(link);
       return response.blob();
@@ -83,8 +92,22 @@ export default defineComponent({
           url: this.emote.urls[0].url,
         });
         this.urls = this.emote.urls.map(({ url }) => TChatAPI.proxy(url));
+
+        // Set page title and OG meta tags
+        document.title = `${emote} — ${channel} — TChat in wild`;
+        this.setMetaTag("og:title", emote);
+        this.setMetaTag("og:description", `Emote on ${channel}'s channel — TChat in wild`);
+        this.setMetaTag("og:image", this.emote.urls[this.emote.urls.length - 1].url);
+        this.setMetaTag("og:url", window.location.href);
       }
     }
+  },
+  beforeUnmount() {
+    // Clean up OG meta tags when leaving the page
+    ["og:title", "og:description", "og:image", "og:url"].forEach((prop) => {
+      const el = document.querySelector(`meta[property="${prop}"]`);
+      if (el) el.remove();
+    });
   },
 });
 </script>

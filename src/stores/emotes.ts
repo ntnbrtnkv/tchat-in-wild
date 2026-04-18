@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { EmotesAPI } from "@/api/emotes";
 import type { IEmote } from "@/types/Emote";
+import type { EmoteProvider } from "@/types/Emote";
 
 type IState = {
   globalEmotes: IEmote[];
@@ -15,6 +16,12 @@ export const useEmotesStore = defineStore<
     map: (state: IState) => Record<string, IEmote>;
     emotes: (state: IState) => IEmote[];
     getEmote: (state: IState) => (name: string) => IEmote | undefined;
+    channelEmotesByProvider: (
+      state: IState
+    ) => (provider: EmoteProvider) => IEmote[];
+    globalEmotesByProvider: (
+      state: IState
+    ) => (provider: EmoteProvider) => IEmote[];
   },
   {
     fetchGlobalEmotes: () => Promise<void>;
@@ -41,6 +48,14 @@ export const useEmotesStore = defineStore<
     },
     getEmote() {
       return (name: string) => this.map[name];
+    },
+    channelEmotesByProvider() {
+      return (provider: EmoteProvider) =>
+        this.channelEmotes.filter((e) => e.provider === provider);
+    },
+    globalEmotesByProvider() {
+      return (provider: EmoteProvider) =>
+        this.globalEmotes.filter((e) => e.provider === provider);
     },
   },
   actions: {
