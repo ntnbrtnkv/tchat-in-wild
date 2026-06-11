@@ -92,16 +92,56 @@ async function getTwitchUserId(channel: string): Promise<string | null> {
   }
 }
 
+// ─── Twitch emotes via IVR ────────────────────────────────────────────────────
+
+interface IvrEmoteEntry {
+  id: string;
+  code: string;
+  assetType: "STATIC" | "ANIMATED";
+}
+
+interface IvrSubProduct {
+  emotes: IvrEmoteEntry[];
+}
+
+interface IvrChannelEmotesResponse {
+  subProducts: IvrSubProduct[];
+}
+
+interface IvrSetEntry {
+  code: string;
+  id: string;
+  assetType: "STATIC" | "ANIMATED";
+}
+
+type IvrSetResponse = Array<{
+  emoteList: IvrSetEntry[];
+}>;
+
+function normalizeTwitch(emote: IvrEmoteEntry): IEmote {
+  const type = emote.assetType === "ANIMATED" ? "animated" : "default";
+  return {
+    provider: EmoteProvider.Twitch,
+    code: emote.code,
+    urls: [
+      { size: "1x", url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/${type}/dark/1.0` },
+      { size: "2x", url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/${type}/dark/2.0` },
+      { size: "3x", url: `https://static-cdn.jtvnw.net/emoticons/v2/${emote.id}/${type}/dark/3.0` },
+    ],
+  };
+}
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 class Emotes {
   async getGlobalEmotes(): Promise<IEmote[]> {
-    const [bttv, ffz, sevenTv] = await Promise.allSettled([
+    const [bttv, ffz, sevenTv, twitch] = await Promise.allSettled([
       axios.get<BttvEmote[]>("https://api.betterttv.net/3/cached/emotes/global"),
       axios.get<{ sets: Record<string, FfzSet>; default_sets: number[] }>(
         "https://api.frankerfacez.com/v1/set/global"
       ),
       axios.get<{ emotes: SevenTvEmote[] }>("https://7tv.io/v3/emote-sets/global", { timeout: 5000 }),
+      axios.get<IvrSetResponse>("https://api.ivr.fi/v2/twitch/emotes/sets?set_id=0"),
     ]);
 
     const emotes: IEmote[] = [];
@@ -123,6 +163,11 @@ class Emotes {
           .filter((e): e is IEmote => e !== null)
       );
     }
+    if (twitch.status === "fulfilled") {
+      emotes.push(
+        ...twitch.value.data.flatMap((set) => set.emoteList.map(normalizeTwitch))
+      );
+    }
 
     return emotes;
   }
@@ -137,6 +182,15 @@ class Emotes {
           `https://api.frankerfacez.com/v1/room/${encodeURIComponent(channel)}`
         )
         .then(({ data }) => normalizeFfzSets(data.sets))
+        .catch(() => []),
+      // Twitch channel emotes via IVR (no OAuth required)
+      axios
+        .get<IvrChannelEmotesResponse>(
+          `https://api.ivr.fi/v2/twitch/emotes/channel/${encodeURIComponent(channel)}`
+        )
+        .then(({ data }) =>
+          data.subProducts.flatMap((p) => p.emotes.map(normalizeTwitch))
+        )
         .catch(() => []),
     ];
 
