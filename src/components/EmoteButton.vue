@@ -35,7 +35,10 @@ export default {
         :src="emote.url"
         :alt="emote.name"
         :title="emote.name"
+        width="28"
+        height="28"
         loading="lazy"
+        @error="($event.target as HTMLImageElement).style.display = 'none'"
       />
     </router-link>
   </li>

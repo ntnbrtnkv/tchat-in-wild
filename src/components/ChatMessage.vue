@@ -102,6 +102,7 @@ export default defineComponent({
             :alt="word.name"
             :title="word.name"
             loading="lazy"
+            @error="($event.target as HTMLImageElement).style.display = 'none'"
           />
         </div>
       </template>

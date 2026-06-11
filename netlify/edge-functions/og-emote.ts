@@ -1,7 +1,6 @@
 const BOT_UA_REGEX =
   /TelegramBot|Twitterbot|Discordbot|Slackbot|WhatsApp|facebookexternalhit|LinkedInBot|vkShare|Viber|Googlebot/i;
 
-const EMOTES_API = "https://emotes.adamcy.pl/v1";
 const CLOUDINARY_CLOUD = "drywhmegg";
 
 type ApiEmote = {
@@ -9,6 +8,155 @@ type ApiEmote = {
   code: string;
   urls: Array<{ size: string; url: string }>;
 };
+
+// ─── Direct provider helpers ──────────────────────────────────────────────────
+
+async function getTwitchUserId(channel: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://api.ivr.fi/v2/twitch/user?login=${encodeURIComponent(channel)}`
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as Array<{ id: string }>;
+    return data[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function fetchBttvGlobal(): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch("https://api.betterttv.net/3/cached/emotes/global");
+    if (!res.ok) return [];
+    const data = (await res.json()) as Array<{ id: string; code: string }>;
+    return data.map((e) => ({
+      provider: 2,
+      code: e.code,
+      urls: [
+        { size: "1x", url: `https://cdn.betterttv.net/emote/${e.id}/1x` },
+        { size: "2x", url: `https://cdn.betterttv.net/emote/${e.id}/2x` },
+        { size: "3x", url: `https://cdn.betterttv.net/emote/${e.id}/3x` },
+      ],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function fetchBttvChannel(userId: string): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch(
+      `https://api.betterttv.net/3/cached/users/twitch/${userId}`
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      channelEmotes: Array<{ id: string; code: string }>;
+      sharedEmotes: Array<{ id: string; code: string }>;
+    };
+    return [...data.channelEmotes, ...data.sharedEmotes].map((e) => ({
+      provider: 2,
+      code: e.code,
+      urls: [
+        { size: "1x", url: `https://cdn.betterttv.net/emote/${e.id}/1x` },
+        { size: "2x", url: `https://cdn.betterttv.net/emote/${e.id}/2x` },
+        { size: "3x", url: `https://cdn.betterttv.net/emote/${e.id}/3x` },
+      ],
+    }));
+  } catch {
+    return [];
+  }
+}
+
+async function fetchFfzGlobal(): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch("https://api.frankerfacez.com/v1/set/global");
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      sets: Record<string, { emoticons: Array<{ id: number; name: string; urls: Record<string, string | null> }> }>;
+      default_sets: number[];
+    };
+    return data.default_sets.flatMap((setId) => {
+      const set = data.sets[String(setId)];
+      if (!set) return [];
+      return set.emoticons.flatMap((e) => {
+        const urls: ApiEmote["urls"] = [];
+        if (e.urls["1"]) urls.push({ size: "1x", url: `https:${e.urls["1"]}` });
+        if (e.urls["2"]) urls.push({ size: "2x", url: `https:${e.urls["2"]}` });
+        if (e.urls["4"]) urls.push({ size: "4x", url: `https:${e.urls["4"]}` });
+        return urls.length > 0 ? [{ provider: 3, code: e.name, urls }] : [];
+      });
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchFfzChannel(channel: string): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch(
+      `https://api.frankerfacez.com/v1/room/${encodeURIComponent(channel)}`
+    );
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      sets: Record<string, { emoticons: Array<{ id: number; name: string; urls: Record<string, string | null> }> }>;
+    };
+    return Object.values(data.sets).flatMap((set) =>
+      set.emoticons.flatMap((e) => {
+        const urls: ApiEmote["urls"] = [];
+        if (e.urls["1"]) urls.push({ size: "1x", url: `https:${e.urls["1"]}` });
+        if (e.urls["2"]) urls.push({ size: "2x", url: `https:${e.urls["2"]}` });
+        if (e.urls["4"]) urls.push({ size: "4x", url: `https:${e.urls["4"]}` });
+        return urls.length > 0 ? [{ provider: 3, code: e.name, urls }] : [];
+      })
+    );
+  } catch {
+    return [];
+  }
+}
+
+async function fetchSevenTvGlobal(): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch("https://7tv.io/v3/emote-sets/global");
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      emotes: Array<{ id: string; name: string; data?: { host: { url: string; files: Array<{ name: string; format: string }> } } }>;
+    };
+    return data.emotes.flatMap((e) => {
+      const host = e.data?.host;
+      if (!host) return [];
+      const baseUrl = `https:${host.url}`;
+      const urls: ApiEmote["urls"] = (["1x", "2x", "3x", "4x"] as const).flatMap((size) => {
+        const file = host.files.find((f) => f.name === `${size}.webp`);
+        return file ? [{ size, url: `${baseUrl}/${file.name}` }] : [];
+      });
+      return urls.length > 0 ? [{ provider: 4, code: e.name, urls }] : [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+async function fetchSevenTvChannel(userId: string): Promise<ApiEmote[]> {
+  try {
+    const res = await fetch(`https://7tv.io/v3/users/twitch/${userId}`);
+    if (!res.ok) return [];
+    const data = (await res.json()) as {
+      emote_set: { emotes: Array<{ id: string; name: string; data?: { host: { url: string; files: Array<{ name: string; format: string }> } } }> };
+    };
+    return data.emote_set.emotes.flatMap((e) => {
+      const host = e.data?.host;
+      if (!host) return [];
+      const baseUrl = `https:${host.url}`;
+      const urls: ApiEmote["urls"] = (["1x", "2x", "3x", "4x"] as const).flatMap((size) => {
+        const file = host.files.find((f) => f.name === `${size}.webp`);
+        return file ? [{ size, url: `${baseUrl}/${file.name}` }] : [];
+      });
+      return urls.length > 0 ? [{ provider: 4, code: e.name, urls }] : [];
+    });
+  } catch {
+    return [];
+  }
+}
 
 function getPreferredUrl(emote: ApiEmote): string {
   const preferred =
@@ -152,18 +300,23 @@ export default async (request: Request) => {
   const [channel, emoteName] = segments.map(decodeURIComponent);
 
   try {
-    // Fetch channel + global emotes in parallel
-    const [channelRes, globalRes] = await Promise.all([
-      fetch(`${EMOTES_API}/channel/${encodeURIComponent(channel)}/emotes/all`),
-      fetch(`${EMOTES_API}/global/emotes/all`),
+    // Fetch user ID + global emotes in parallel, then channel emotes
+    const [userId, bttvGlobal, ffzGlobal, sevenTvGlobal] = await Promise.all([
+      getTwitchUserId(channel),
+      fetchBttvGlobal(),
+      fetchFfzGlobal(),
+      fetchSevenTvGlobal(),
     ]);
 
-    const channelEmotes: ApiEmote[] = channelRes.ok
-      ? await channelRes.json()
-      : [];
-    const globalEmotes: ApiEmote[] = globalRes.ok
-      ? await globalRes.json()
-      : [];
+    const channelResults = await Promise.all([
+      fetchFfzChannel(channel),
+      ...(userId
+        ? [fetchBttvChannel(userId), fetchSevenTvChannel(userId)]
+        : []),
+    ]);
+
+    const channelEmotes: ApiEmote[] = channelResults.flat();
+    const globalEmotes: ApiEmote[] = [...bttvGlobal, ...ffzGlobal, ...sevenTvGlobal];
 
     const allEmotes = [...channelEmotes, ...globalEmotes];
     const emote = allEmotes.find((e) => e.code === emoteName);
